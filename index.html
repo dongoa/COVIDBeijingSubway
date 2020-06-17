@@ -1,0 +1,219 @@
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <!--重要meta, 必须!-->
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0,shrink-to-fit=no"
+        name="viewport" />
+    <title>
+        SUBWAY
+    </title>
+    <style>
+        .custom_circle1 {
+            fill: #ff0000 !important;
+            opacity: 8;
+        }
+
+        .custom_circle2 {
+            fill: #ffc614 !important;
+            opacity: 8;
+        }
+
+        .tooltip {
+            background-color: blue;
+            font-size: 20px;
+        }
+
+        .amap-subway-api .tip_wrap {
+            position: absolute;
+            left: -98px;
+            bottom: 0;
+        }
+
+        .tip_bady {
+            width: 180px;
+            padding: 0 8px;
+            background: rgba(51, 51, 51, 0.8);
+            box-shadow: 0 0 6px 1px rgba(0, 0, 0, .3);
+            border-radius: 4px;
+        }
+
+        .tip_name_detail {
+            height: 34px;
+            line-height: 34px;
+            color: #fff;
+            font-size: 14px;
+            border-bottom: 1px rgba(190, 189, 189, 0.5) solid;
+            overflow: hidden;
+        }
+
+        .amap-subway-api .tip_name_detail .tip_name {
+            display: inline-block;
+            float: left;
+        }
+
+        .amap-subway-api .tip_footer {
+            height: 10px;
+            background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAALCAYAAACUPhZAAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAG5JREFUeNpiNDY2FmNgYJgDxFIM1AOvgDidCcpIAeJn1DQYiB8zIQlQwwK4wSAOE5oEJRagGIxuOCUWYBiMzXByLMBqMC7DSbEAp8H4DCfGArwGEzIcnwUEDSbGcGwWEGUwsYYjW3CBWINBACDAACkeLdxbVjieAAAAAElFTkSuQmCC) no-repeat center top;
+            background-size: 21px 10px;
+        }
+    </style>
+    </meta>
+</head>
+
+<body>
+    <div id="mysubway">
+    </div>
+    <script src="https://webapi.amap.com/subway?v=1.0&key=3da410545e8ffe2c5174f48ecf719d3d&callback=cbk">
+    </script>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script type="text/javascript">
+        d3.dsv(",", "./src/bjData.csv", function (d) {
+            return d
+        }).then(function (data) {
+            console.log(data);
+            window.cbk = function () {
+                var mysubway = subway("mysubway", {
+                    adcode: 1100,
+                    theme: "colorful",
+                    client: 0,
+                    doubleclick: {
+                        switch: true
+                    }
+                });
+                mysubway.event.on("subway.complete", function () {
+                    var center = mysubway.getStCenter('南锣鼓巷');
+                    mysubway.setCenter(center);
+                    data.forEach(element => {
+                        mysubway.addCustomNode(element.name, {
+                            type: "circle",
+                            r:
+                                // Number(element.nums) >= 50 || element.level === "3" ? 
+                                5
+                            // : 2
+                            ,
+                            customClass: element.level === "3" ? "custom_circle1" : "custom_circle2",
+                        })
+                        
+                        // mysubway.addInfoWindow(element.name, {
+                        //     content:
+                        //         `<div class="tip_wrap">
+                        //             <div class="tip_bady">
+                        //                 <div class="tip_name_detail">
+                        //                     <span class="tip_name" id="tip_name">四道桥</span>
+                        //                 </div>
+                        //                 <div class="tip_route">
+                        //                     <div class="tip_route_btn tip_route_start ust" data-type="start">设为起点</div>
+                        //                     <div class="tip_route_btn tip_route_end ust" data-type="end">设为终点</div>
+                        //                 </div>
+                        //             </div>
+                        //             <div class="tip_footer"></div>
+                        //         </div>`
+                        //     // content: `<div>${element.name}</div>`
+                        // });
+                        
+                    });
+
+
+                });
+                mysubway.event.on("station.touch", function (ev, info) {
+                            var id = info.id;
+                            // mysubway.stopAnimation();
+                           
+                            let ans = data.find((v)=>{
+                                console.log(v);
+                                return v.name === info.name;
+                            })
+                            let level = ans?ans.level==="2"?"中风险地区":"高风险地区":"低风险地区";
+                            let nums = ans?ans.nums:0;
+                            console.log(ev, info, id,ans);
+                            mysubway.addInfoWindow(id, {
+                                content: `<div class="tip_wrap">
+                                    <div class="tip_bady">
+                                        <div class="tip_name_detail">
+                                            <span class="tip_name" id="tip_name">${info.name}</span>
+                                        </div>
+                                        <div class="tip_route">
+                                            <div class="tip_name" id="tip_name">风险等级：${level}</div>
+                                            <div class="tip_name" id="tip_name">该地区确诊人数：${nums}</div>
+                                            <div class="tip_route_btn tip_route_start ust" data-type="start">设为起点</div>
+                                            <div class="tip_route_btn tip_route_end ust" data-type="end">设为终点</div>
+                                        </div>
+                                    </div>
+                                    <div class="tip_footer"></div>
+                                </div>`
+                            });
+                            // var center = mySubway.getStCenter(id);
+                            // mysubway.setCenter(center);
+                });
+
+                mysubway.event.on("subway.touch", function () {
+                            mysubway.clearInfoWindow();
+                });
+
+                // //地铁加载完成，执行complete事件
+                // mysubway.event.on("subway.complete", function (ev, info) {
+                //     var id = info.id;
+                // });
+
+                // //点击站点，显示此站点的信息窗体
+                // mysubway.event.on("station.touch", function (ev, info) {
+                //     var id = info.id;
+                //     mysubway.stopAnimation();
+                //     mysubway.addInfoWindow(id, {});
+                //     var center = mySubway.getStCenter(id);
+                //     mysubway.setCenter(center);
+                // });
+
+                // //点击线路名，高亮此线路
+                // mysubway.event.on("lineName.touch", function (ev, info) {
+                //     mysubway.showLine(info.id);
+                //     var select_obj = qs('#g-select');
+                //     mysubway.setFitView(select_obj);
+                //     var center = mySubway.getSelectedLineCenter();
+                //     mysubway.setCenter(center);
+                // });
+
+                // //点击空白, 关闭infowindow
+                // mysubway.event.on("subway.touch", function () {
+                //     mysubway.clearInfoWindow();
+                // });
+
+                // //设置起点
+                mysubway.event.on("startStation.touch", function (ev, info) {
+                    mysubway.stopAnimation();
+                    mysubway.clearInfoWindow();
+                    mysubway.setStart(info.id, {});
+                    startInfo = info;
+                    route();
+                });
+
+                // //设置终点
+                mysubway.event.on("endStation.touch", function (ev, info) {
+                    mysubway.stopAnimation();
+                    mysubway.clearInfoWindow();
+                    mysubway.setEnd(info.id, {});
+                    endInfo = info;
+                    route();
+                });
+
+                // //路线规划
+                var startInfo = {},
+                    endInfo = {};
+                function route() {
+                    if (startInfo.id && endInfo.id) {
+                        mysubway.route(startInfo.id, endInfo.id, {});
+                        startInfo = {};
+                        endInfo = {};
+                    }
+                }
+
+
+            };
+        });
+
+
+    </script>
+</body>
+
+</html>
